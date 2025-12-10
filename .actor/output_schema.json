@@ -1,0 +1,16 @@
+{
+    "actorOutputSchemaVersion": 1,
+    "title": "Summarization Output",
+    "properties": {
+        "summary": {
+            "type": "string",
+            "title": "Summary",
+            "template": "{{links.apiDefaultKeyValueStoreUrl}}/records/OUTPUT"
+        },
+        "dataset": {
+            "type": "string",
+            "title": "Full Results Dataset",
+            "template": "{{links.apiDefaultDatasetUrl}}/items?view=overview"
+        }
+    }
+}

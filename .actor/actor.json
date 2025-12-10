@@ -1,0 +1,16 @@
+{
+	"actorSpecification": 1,
+	"name": "summarizer",
+	"title": "AI Text Summarizer with Recursive Chunking",
+	"description": "Summarizes long text documents using AI (OpenAI GPT models) with intelligent recursive chunking. Handles documents of any length by breaking them into manageable chunks, summarizing each, and recursively combining summaries until a final concise summary is produced. Supports customizable summary lengths and system prompts.",
+	"version": "1.0",
+	"meta": {
+		"templateId": "ts-start-bun"
+	},
+	"input": "./input_schema.json",
+	"output": "./output_schema.json",
+	"storages": {
+		"dataset": "./dataset_schema.json"
+	},
+	"dockerfile": "../Dockerfile"
+}

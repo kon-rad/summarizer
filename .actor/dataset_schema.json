@@ -1,0 +1,58 @@
+{
+    "actorSpecification": 1,
+    "fields": {},
+    "views": {
+        "overview": {
+            "title": "Overview",
+            "transformation": {
+                "fields": [
+                    "summary",
+                    "metadata.originalLength",
+                    "metadata.summaryLength",
+                    "metadata.compressionRatio",
+                    "metadata.chunksProcessed",
+                    "metadata.recursionLevels",
+                    "metadata.modelUsed",
+                    "metadata.timestamp"
+                ]
+            },
+            "display": {
+                "component": "table",
+                "properties": {
+                    "summary": {
+                        "label": "Summary",
+                        "format": "text"
+                    },
+                    "metadata.originalLength": {
+                        "label": "Original Length",
+                        "format": "number"
+                    },
+                    "metadata.summaryLength": {
+                        "label": "Summary Length",
+                        "format": "number"
+                    },
+                    "metadata.compressionRatio": {
+                        "label": "Compression Ratio",
+                        "format": "number"
+                    },
+                    "metadata.chunksProcessed": {
+                        "label": "Chunks Processed",
+                        "format": "number"
+                    },
+                    "metadata.recursionLevels": {
+                        "label": "Recursion Levels",
+                        "format": "number"
+                    },
+                    "metadata.modelUsed": {
+                        "label": "Model Used",
+                        "format": "text"
+                    },
+                    "metadata.timestamp": {
+                        "label": "Timestamp",
+                        "format": "date"
+                    }
+                }
+            }
+        }
+    }
+}

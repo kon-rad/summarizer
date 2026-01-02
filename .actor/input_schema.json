@@ -13,10 +13,10 @@
         "modelName": {
             "title": "Model Name",
             "type": "string",
-            "description": "The LLM model to use for summarization (e.g., gpt-4o-mini, gpt-4o, claude-3-5-sonnet-20241022).",
+            "description": "The LLM model to use for summarization. Use OpenRouter format (e.g., openai/gpt-4o-mini, anthropic/claude-3.5-sonnet, meta-llama/llama-3.1-70b-instruct). See https://openrouter.ai/models for available models.",
             "editor": "textfield",
-            "default": "gpt-4o-mini",
-            "prefill": "gpt-4o-mini"
+            "default": "openai/gpt-4o-mini",
+            "prefill": "openai/gpt-4o-mini"
         },
         "summaryLength": {
             "title": "Summary Length",
@@ -34,9 +34,9 @@
             "prefill": ""
         },
         "apiKey": {
-            "title": "OpenAI API Key",
+            "title": "OpenRouter API Key",
             "type": "string",
-            "description": "Your OpenAI API key for accessing the LLM.",
+            "description": "Your OpenRouter API key. Get one at https://openrouter.ai/keys. Can also use OPEN_ROUTER_API_KEY environment variable.",
             "editor": "textfield",
             "isSecret": true
         },

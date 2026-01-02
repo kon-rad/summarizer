@@ -1,6 +1,6 @@
 # AI Text Summarizer with Recursive Chunking
 
-An Apify Actor that summarizes long text documents using AI (OpenAI GPT models) with intelligent recursive chunking. This Actor can handle documents of any length by breaking them into manageable chunks, summarizing each chunk, and recursively combining summaries until a final concise summary is produced.
+An Apify Actor that summarizes long text documents using AI via OpenRouter with intelligent recursive chunking. This Actor can handle documents of any length by breaking them into manageable chunks, summarizing each chunk, and recursively combining summaries until a final concise summary is produced. Supports multiple LLM providers through OpenRouter including OpenAI, Anthropic, Meta, Google, and more.
 
 ## Features
 
@@ -8,16 +8,22 @@ An Apify Actor that summarizes long text documents using AI (OpenAI GPT models) 
 - **Intelligent Chunking**: Splits text at sentence and word boundaries to preserve context
 - **Configurable Summary Length**: Choose from short, medium, or long summaries
 - **Custom System Prompts**: Optional custom prompts to guide the summarization style
-- **Multiple Model Support**: Works with any OpenAI model (GPT-4o, GPT-4o-mini, etc.)
+- **Multiple Model Support**: Access to 100+ models via OpenRouter:
+  - OpenAI (GPT-4o, GPT-4o-mini, GPT-3.5)
+  - Anthropic (Claude 3.5 Sonnet, Claude 3 Opus)
+  - Meta (Llama 3.1, Llama 3.2)
+  - Google (Gemini Pro, Gemini Flash)
+  - And many more!
 - **Detailed Metadata**: Tracks compression ratios, chunks processed, and recursion levels
 - **Chunk Overlap**: Maintains context between chunks with configurable overlap
+- **Environment Variable Support**: Use `OPEN_ROUTER_API_KEY` for seamless deployment
 
 ## Included Features
 
 - **[Apify SDK](https://docs.apify.com/sdk/js/)** - toolkit for building [Actors](https://apify.com/actors)
 - **[Input Schema](https://docs.apify.com/platform/actors/development/input-schema)** - validated input parameters
 - **[Dataset](https://docs.apify.com/sdk/js/docs/guides/result-storage#dataset)** - structured storage for results
-- **[OpenAI API](https://platform.openai.com/docs/api-reference)** - GPT models for summarization
+- **[OpenRouter](https://openrouter.ai/)** - unified API for 100+ LLM models
 
 ## How It Works
 
@@ -43,8 +49,10 @@ function recursiveSummarize(text):
 ## Input Parameters
 
 - **text** (required): The text content to summarize
-- **apiKey** (required): Your OpenAI API key
-- **modelName**: The model to use (default: "gpt-4o-mini")
+- **apiKey** (optional): Your OpenRouter API key. Can also be set via `OPEN_ROUTER_API_KEY` environment variable
+- **modelName**: The model to use in OpenRouter format (default: "openai/gpt-4o-mini")
+  - Examples: `openai/gpt-4o`, `anthropic/claude-3.5-sonnet`, `meta-llama/llama-3.1-70b-instruct`
+  - See [OpenRouter Models](https://openrouter.ai/models) for full list
 - **summaryLength**: Desired length - "short", "medium", or "long" (default: "medium")
 - **systemPrompt**: Optional custom system prompt for summarization
 - **chunkSize**: Maximum characters per chunk (default: 4000)
@@ -69,13 +77,25 @@ The Actor produces:
 ```json
 {
   "text": "Your long text here...",
-  "modelName": "gpt-4o-mini",
+  "modelName": "openai/gpt-4o-mini",
   "summaryLength": "medium",
-  "apiKey": "sk-...",
+  "apiKey": "sk-or-v1-...",
   "chunkSize": 4000,
   "chunkOverlap": 200
 }
 ```
+
+Or using environment variable:
+
+```json
+{
+  "text": "Your long text here...",
+  "modelName": "anthropic/claude-3.5-sonnet",
+  "summaryLength": "long"
+}
+```
+
+With `OPEN_ROUTER_API_KEY` set in your environment.
 
 ## Getting Started
 
@@ -83,7 +103,7 @@ The Actor produces:
 
 - Node.js 16 or higher
 - Apify CLI installed (`npm install -g apify-cli`)
-- OpenAI API key
+- OpenRouter API key (get one free at [openrouter.ai/keys](https://openrouter.ai/keys))
 
 ### Local Development
 
@@ -99,14 +119,20 @@ cd summarizer
 npm install
 ```
 
-3. Edit the INPUT.json file in `storage/key_value_stores/default/INPUT.json`:
+3. Set your OpenRouter API key as an environment variable:
+
+```bash
+export OPEN_ROUTER_API_KEY="sk-or-v1-..."
+```
+
+Or edit the INPUT.json file in `storage/key_value_stores/default/INPUT.json`:
 
 ```json
 {
   "text": "Your text to summarize...",
-  "modelName": "gpt-4o-mini",
+  "modelName": "openai/gpt-4o-mini",
   "summaryLength": "medium",
-  "apiKey": "YOUR_OPENAI_API_KEY",
+  "apiKey": "sk-or-v1-...",
   "chunkSize": 4000,
   "chunkOverlap": 200
 }
@@ -185,23 +211,37 @@ For large documents:
 
 **Important**: Never commit your API key to version control. The Actor's input schema marks the API key as secret (`"isSecret": true`), which ensures it's encrypted when stored on the Apify platform.
 
-For local development, you can:
-- Use environment variables
-- Store the key in INPUT.json (make sure it's in .gitignore)
+### Recommended Approach: Environment Variables
+
+The best practice is to use the `OPEN_ROUTER_API_KEY` environment variable:
+
+**Local development:**
+```bash
+export OPEN_ROUTER_API_KEY="sk-or-v1-..."
+apify run
+```
+
+**Apify platform:**
+Set the environment variable in your Actor settings under the "Environment variables" section.
+
+### Alternative Approaches:
+- Store the key in INPUT.json for testing (make sure it's in .gitignore)
 - Use Apify's secret storage when deployed
 
 ## Limitations
 
-- Requires an OpenAI API key (costs apply based on usage)
+- Requires an OpenRouter API key (costs vary by model - see [OpenRouter pricing](https://openrouter.ai/models))
 - Processing time increases with document length
 - Very large documents will require multiple API calls
+- Rate limits depend on your OpenRouter account tier
 
 ## Documentation Reference
 
 - [Apify SDK for JavaScript documentation](https://docs.apify.com/sdk/js)
 - [Apify Platform documentation](https://docs.apify.com/platform)
-- [OpenAI API documentation](https://platform.openai.com/docs/api-reference)
-- [Join our developer community on Discord](https://discord.com/invite/jyEM2PRvMU)
+- [OpenRouter documentation](https://openrouter.ai/docs)
+- [OpenRouter Models](https://openrouter.ai/models)
+- [Join Apify developer community on Discord](https://discord.com/invite/jyEM2PRvMU)
 
 ## Contributing
 

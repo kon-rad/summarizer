@@ -13,6 +13,8 @@
                     "metadata.chunksProcessed",
                     "metadata.recursionLevels",
                     "metadata.modelUsed",
+                    "costTracking.totalTokens",
+                    "costTracking.estimatedCost",
                     "metadata.timestamp"
                 ]
             },
@@ -46,6 +48,14 @@
                     "metadata.modelUsed": {
                         "label": "Model Used",
                         "format": "text"
+                    },
+                    "costTracking.totalTokens": {
+                        "label": "Total Tokens",
+                        "format": "number"
+                    },
+                    "costTracking.estimatedCost": {
+                        "label": "Estimated Cost (USD)",
+                        "format": "number"
                     },
                     "metadata.timestamp": {
                         "label": "Timestamp",

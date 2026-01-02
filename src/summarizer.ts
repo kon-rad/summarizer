@@ -1,5 +1,5 @@
 /**
- * Recursive summarization module using LLM APIs
+ * Recursive summarization module using OpenRouter API
  */
 
 import { log } from 'apify';
@@ -21,6 +21,9 @@ export interface SummarizationResult {
     summaryLength: number;
     chunksProcessed: number;
     recursionLevels: number;
+    inputTokens: number;
+    outputTokens: number;
+    totalTokens: number;
 }
 
 /**
@@ -44,7 +47,7 @@ async function summarizeChunk(
     client: OpenAI,
     modelName: string,
     systemPrompt: string,
-): Promise<string> {
+): Promise<{ summary: string; inputTokens: number; outputTokens: number }> {
     try {
         const response = await client.chat.completions.create({
             model: modelName,
@@ -61,7 +64,17 @@ async function summarizeChunk(
             throw new Error('Empty response from LLM');
         }
 
-        return summary;
+        // Extract token usage from response
+        const inputTokens = response.usage?.prompt_tokens || 0;
+        const outputTokens = response.usage?.completion_tokens || 0;
+
+        log.info('Chunk summarized', {
+            inputTokens,
+            outputTokens,
+            totalTokens: inputTokens + outputTokens,
+        });
+
+        return { summary, inputTokens, outputTokens };
     } catch (error) {
         log.error('Error calling LLM API', { error });
         throw new Error(`Failed to summarize chunk: ${error instanceof Error ? error.message : String(error)}`);
@@ -76,7 +89,7 @@ async function recursiveSummarize(
     client: OpenAI,
     options: SummarizerOptions,
     level: number = 1,
-): Promise<{ summary: string; levels: number; chunks: number }> {
+): Promise<{ summary: string; levels: number; chunks: number; inputTokens: number; outputTokens: number }> {
     const { modelName, systemPrompt, chunkSize, chunkOverlap, summaryLength } = options;
 
     const finalSystemPrompt = systemPrompt || getDefaultSystemPrompt(summaryLength);
@@ -87,8 +100,14 @@ async function recursiveSummarize(
 
     if (estimatedTokens <= maxTokens) {
         log.info(`Level ${level}: Summarizing directly (${estimatedTokens} estimated tokens)`);
-        const summary = await summarizeChunk(text, client, modelName, finalSystemPrompt);
-        return { summary, levels: level, chunks: 1 };
+        const result = await summarizeChunk(text, client, modelName, finalSystemPrompt);
+        return {
+            summary: result.summary,
+            levels: level,
+            chunks: 1,
+            inputTokens: result.inputTokens,
+            outputTokens: result.outputTokens,
+        };
     }
 
     // Recursive case: split into chunks, summarize each, then combine
@@ -99,14 +118,34 @@ async function recursiveSummarize(
 
     log.info(`Level ${level}: Created ${chunks.length} chunks`);
 
-    // Summarize each chunk
+    // Summarize each chunk in batches to avoid memory overflow
+    const BATCH_SIZE = 10; // Process 10 chunks at a time
     const chunkSummaries: string[] = [];
+    let levelInputTokens = 0;
+    let levelOutputTokens = 0;
 
-    for (let i = 0; i < chunks.length; i++) {
-        log.info(`Level ${level}: Summarizing chunk ${i + 1}/${chunks.length}`);
-        const chunkSummary = await summarizeChunk(chunks[i], client, modelName, finalSystemPrompt);
-        chunkSummaries.push(chunkSummary);
+    for (let batchStart = 0; batchStart < chunks.length; batchStart += BATCH_SIZE) {
+        const batchEnd = Math.min(batchStart + BATCH_SIZE, chunks.length);
+        const batch = chunks.slice(batchStart, batchEnd);
+
+        log.info(`Level ${level}: Processing batch ${Math.floor(batchStart / BATCH_SIZE) + 1}/${Math.ceil(chunks.length / BATCH_SIZE)} (chunks ${batchStart + 1}-${batchEnd}/${chunks.length})`);
+
+        // Process batch chunks sequentially
+        for (let i = 0; i < batch.length; i++) {
+            const chunkIndex = batchStart + i;
+            log.info(`Level ${level}: Summarizing chunk ${chunkIndex + 1}/${chunks.length}`);
+            const result = await summarizeChunk(batch[i], client, modelName, finalSystemPrompt);
+            chunkSummaries.push(result.summary);
+            levelInputTokens += result.inputTokens;
+            levelOutputTokens += result.outputTokens;
+
+            // Help garbage collection by clearing chunk reference
+            batch[i] = '';
+        }
     }
+
+    // Clear chunks array to free memory
+    chunks.length = 0;
 
     // Combine all chunk summaries
     const combinedSummaries = chunkSummaries.join('\n\n');
@@ -123,17 +162,24 @@ async function recursiveSummarize(
             summary: result.summary,
             levels: result.levels,
             chunks: chunks.length + result.chunks,
+            inputTokens: levelInputTokens + result.inputTokens,
+            outputTokens: levelOutputTokens + result.outputTokens,
         };
     }
 
     // Final summarization of combined summaries
     log.info(`Level ${level}: Creating final summary`);
-    const finalSummary = await summarizeChunk(combinedSummaries, client, modelName, finalSystemPrompt);
+    const finalResult = await summarizeChunk(combinedSummaries, client, modelName, finalSystemPrompt);
+
+    // Clear summaries to free memory
+    chunkSummaries.length = 0;
 
     return {
-        summary: finalSummary,
+        summary: finalResult.summary,
         levels: level,
         chunks: chunks.length,
+        inputTokens: levelInputTokens + finalResult.inputTokens,
+        outputTokens: levelOutputTokens + finalResult.outputTokens,
     };
 }
 
@@ -149,9 +195,14 @@ export async function summarizeText(text: string, options: SummarizerOptions): P
         chunkOverlap: options.chunkOverlap,
     });
 
-    // Initialize OpenAI client
+    // Initialize OpenAI-compatible client for OpenRouter
     const client = new OpenAI({
         apiKey: options.apiKey,
+        baseURL: 'https://openrouter.ai/api/v1',
+        defaultHeaders: {
+            'HTTP-Referer': 'https://apify.com',
+            'X-Title': 'Apify Text Summarizer',
+        },
     });
 
     const originalLength = text.length;
@@ -160,6 +211,7 @@ export async function summarizeText(text: string, options: SummarizerOptions): P
     const result = await recursiveSummarize(text, client, options);
 
     const summaryLength = result.summary.length;
+    const totalTokens = result.inputTokens + result.outputTokens;
 
     log.info('Summarization complete', {
         originalLength,
@@ -167,6 +219,9 @@ export async function summarizeText(text: string, options: SummarizerOptions): P
         compressionRatio: (originalLength / summaryLength).toFixed(2),
         chunksProcessed: result.chunks,
         recursionLevels: result.levels,
+        inputTokens: result.inputTokens,
+        outputTokens: result.outputTokens,
+        totalTokens,
     });
 
     return {
@@ -175,5 +230,8 @@ export async function summarizeText(text: string, options: SummarizerOptions): P
         summaryLength,
         chunksProcessed: result.chunks,
         recursionLevels: result.levels,
+        inputTokens: result.inputTokens,
+        outputTokens: result.outputTokens,
+        totalTokens,
     };
 }

@@ -57,11 +57,18 @@ export function chunkText(text: string, options: ChunkOptions): string[] {
         }
 
         // Move to next chunk with overlap
-        startIndex = endIndex - chunkOverlap;
+        const nextStart = endIndex - chunkOverlap;
 
-        // Ensure we're moving forward
-        if (startIndex <= chunks.length > 1 ? text.indexOf(chunks[chunks.length - 1]) : 0) {
+        // Ensure we're always moving forward to prevent infinite loops
+        if (nextStart <= startIndex) {
             startIndex = endIndex;
+        } else {
+            startIndex = nextStart;
+        }
+
+        // Safety check: if we're not making progress, force move forward
+        if (startIndex >= text.length) {
+            break;
         }
     }
 

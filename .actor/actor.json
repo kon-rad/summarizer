@@ -2,7 +2,7 @@
 	"actorSpecification": 1,
 	"name": "summarizer",
 	"title": "AI Text Summarizer with Recursive Chunking",
-	"description": "Summarizes long text documents using AI (OpenAI GPT models) with intelligent recursive chunking. Handles documents of any length by breaking them into manageable chunks, summarizing each, and recursively combining summaries until a final concise summary is produced. Supports customizable summary lengths and system prompts.",
+	"description": "Summarizes long text documents using AI via OpenRouter with intelligent recursive chunking. Access 100+ LLM models including GPT-4o, Claude 3.5, Llama 3.1, and more. Handles documents of any length by breaking them into manageable chunks, summarizing each, and recursively combining summaries until a final concise summary is produced. Supports customizable summary lengths and system prompts.",
 	"version": "1.0",
 	"meta": {
 		"templateId": "ts-start-bun"

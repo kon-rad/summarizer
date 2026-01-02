@@ -1,12 +1,11 @@
 # Specify the base Docker image
 FROM oven/bun:1.2
 
-# Next, copy the source files using the user set
-# in the base image.
-COPY --chown=myuser:myuser . ./
+# Copy source files
+COPY . ./
 
-# Install all dependencies.
-RUN bun install
+# Install all dependencies
+RUN bun install --production
 
-# Run the image.
+# Run the Actor
 CMD bun run start
